@@ -3,6 +3,9 @@
   hosts: chat-server
   become: true
 
+  vars:
+    app_dir: "/opt/realtime-chat"
+
   tasks:
     - name: Update apt cache
       apt:
@@ -18,7 +21,6 @@
 
     - name: Add NodeSource repo (Node 16.x)
       shell: curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-      args: { warn: false }
       changed_when: false
 
     - name: Install Node.js
@@ -27,19 +29,19 @@
         state: present
         update_cache: yes
 
-    - name: Create /opt/realtime-chat directory
+    - name: Create application directory
       file:
-        path: /opt/realtime-chat
+        path: "{{ app_dir }}"
         state: directory
         owner: ubuntu
         group: ubuntu
         mode: '0755'
 
-    - name: Clone (or pull) chat repo into /opt/realtime-chat
+    - name: Clone (or pull) chat repo into {{ app_dir }}
       git:
-        repo: 'https://github.com/your-username/PROJECT2_CHAT_NODEJS.git'
-        dest: /opt/realtime-chat
-        version: main
+        repo: "https://github.com/Tracyerite/realtime-chat-app.git"
+        dest: "{{ app_dir }}"
+        version: realtime-chat
         force: yes
         update: yes
         accept_hostkey: yes
@@ -47,7 +49,7 @@
 
     - name: Install NPM dependencies (only if repo changed)
       npm:
-        path: /opt/realtime-chat/app
+        path: "{{ app_dir }}/app"
         production: yes
       when: git_pull.changed
 
@@ -64,7 +66,8 @@
         systemctl daemon-reload
         systemctl enable realtime-chat
         systemctl restart realtime-chat
-      args: { executable: /bin/bash }
+      args:
+        executable: /bin/bash
 
     - name: Install Nginx
       apt:
