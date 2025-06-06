@@ -1,0 +1,8 @@
+# Ignore Node.js dependencies
+app/node_modules/
+
+# Logs
+npm-debug.log*
+
+# Editor folders
+.vscode/

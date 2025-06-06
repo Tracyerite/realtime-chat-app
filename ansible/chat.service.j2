@@ -1,0 +1,14 @@
+[Unit]
+Description=Real-Time Chat App (Node.js + Socket.IO)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/realtime-chat/app
+ExecStart=/usr/bin/node /opt/realtime-chat/app/app.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

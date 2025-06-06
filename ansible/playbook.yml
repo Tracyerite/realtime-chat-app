@@ -1,0 +1,102 @@
+---
+- name: Configure & deploy Node.js + Socket.IO chat
+  hosts: chat-server
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Node.js prerequisites
+      apt:
+        name:
+          - curl
+          - build-essential
+          - git
+        state: present
+
+    - name: Add NodeSource repo (Node 16.x)
+      shell: curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+      args: { warn: false }
+      changed_when: false
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Create /opt/realtime-chat directory
+      file:
+        path: /opt/realtime-chat
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Clone (or pull) chat repo into /opt/realtime-chat
+      git:
+        repo: 'https://github.com/your-username/PROJECT2_CHAT_NODEJS.git'
+        dest: /opt/realtime-chat
+        version: main
+        force: yes
+        update: yes
+        accept_hostkey: yes
+      register: git_pull
+
+    - name: Install NPM dependencies (only if repo changed)
+      npm:
+        path: /opt/realtime-chat/app
+        production: yes
+      when: git_pull.changed
+
+    - name: Copy systemd service file for Node.js
+      template:
+        src: chat.service.j2
+        dest: /etc/systemd/system/realtime-chat.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd & enable chat service
+      shell: |
+        systemctl daemon-reload
+        systemctl enable realtime-chat
+        systemctl restart realtime-chat
+      args: { executable: /bin/bash }
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Remove default Nginx site (if exists)
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Copy Nginx site config for chat
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/realtime-chat
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable realtime-chat Nginx site
+      file:
+        src: /etc/nginx/sites-available/realtime-chat
+        dest: /etc/nginx/sites-enabled/realtime-chat
+        state: link
+        force: yes
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      register: nginx_test
+      failed_when: nginx_test.rc != 0
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
