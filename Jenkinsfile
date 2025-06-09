@@ -24,19 +24,9 @@ pipeline {
 
     stage('Run Ansible Playbook') {
       steps {
-        withCredentials([sshUserPrivateKey(
-          credentialsId: 'ansible-ssh-key',    // replace with your actual Jenkins credential ID
-          keyFileVariable: 'SSH_KEY_FILE',
-          usernameVariable: 'SSH_USER'
-        )]) {
-          sh """
-            chmod 600 "$SSH_KEY_FILE"
-            ansible-playbook \
-              -i ansible/inventory.ini \
-              ansible/playbook.yml \
-              --private-key "$SSH_KEY_FILE" \
-              -u "$SSH_USER"
-          """
+        echo 'Running Ansible playbook...'
+        sshagent(credentials: ['ansible-ssh-key']) {
+          sh 'ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -u ubuntu'
         }
       }
     }
