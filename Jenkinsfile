@@ -16,14 +16,16 @@ pipeline {
     stage('Install Node.js Dependencies') {
       steps {
         echo 'Installing npm packages...'
-        sh 'npm install'
+        dir('app') {
+          sh 'npm install'
+        }
       }
     }
 
     stage('Run Ansible Playbook') {
       steps {
         withCredentials([sshUserPrivateKey(
-          credentialsId: 'ansible-ssh-key',    // ← replace with your actual Jenkins credential ID
+          credentialsId: 'ansible-ssh-key',    // replace with your actual Jenkins credential ID
           keyFileVariable: 'SSH_KEY_FILE',
           usernameVariable: 'SSH_USER'
         )]) {
